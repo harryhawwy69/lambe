@@ -57,8 +57,22 @@ go install github.com/andrew-bierman/lambe/cmd/lambe@latest
 Each [release](https://github.com/andrew-bierman/lambe/releases) also has
 `.deb`, `.rpm`, and `.apk` packages for amd64 and arm64. They install
 `/usr/bin/lambe` and an example unit under `/usr/share/doc/lambe/examples/`;
-no service is enabled. Checksums are signed with cosign and releases carry
-SBOMs and build attestations; verification commands are in
+no service is enabled. Every release artifact (archives, deb/rpm/apk, SBOMs,
+`checksums.txt`) is signed with cosign and carries a build attestation.
+
+### Verifying a release
+
+Download an artifact and its `.sigstore.json` bundle, then:
+
+```sh
+cosign verify-blob lambe_X.Y.Z_linux_amd64.deb \
+  --bundle lambe_X.Y.Z_linux_amd64.deb.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/andrew-bierman/lambe/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify lambe_X.Y.Z_linux_amd64.deb --repo andrew-bierman/lambe
+```
+
+Same for the `.tar.gz` archives. Details and the checksum flow are in
 [docs/RELEASING.md](docs/RELEASING.md#verifying-a-release).
 
 The installer verifies the archive against the release checksum (and the

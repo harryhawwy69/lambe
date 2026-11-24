@@ -52,11 +52,12 @@ checksum:
 changelog:
   disable: true
 
-# Keyless (OIDC) signature over the checksums; verify with
+# Keyless (OIDC) signature for every release artifact (archives, deb/rpm/apk,
+# SBOMs and checksums.txt), one `<file>.sigstore.json` bundle each. Verify with
 # `cosign verify-blob` as documented in docs/RELEASING.md.
 signs:
   - cmd: cosign
-    artifacts: checksum
+    artifacts: all
     output: true
     signature: "${artifact}.sigstore.json"
     args:

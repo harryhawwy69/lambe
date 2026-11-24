@@ -71,7 +71,7 @@ remove in a later minor release and list it under "Removed".
 3. **CLI release.** Pushing the tag runs `.github/workflows/release.yml`:
    goreleaser builds linux/darwin x amd64/arm64 archives, `.deb`/`.rpm`/`.apk`
    packages (nfpms), an SBOM per archive (syft), `checksums.txt` with a keyless
-   cosign bundle (`checksums.txt.sigstore.json`), pushes the Homebrew formula
+   cosign bundle per artifact (`<file>.sigstore.json`, including `checksums.txt`), pushes the Homebrew formula
    to `andrew-bierman/homebrew-tap`, and publishes the GitHub release using the
    CHANGELOG section as notes. The workflow then attests build provenance for
    everything in `checksums.txt`.
@@ -129,18 +129,30 @@ remove in a later minor release and list it under "Removed".
 
 ## Verifying a release
 
-From a directory holding `checksums.txt`, `checksums.txt.sigstore.json`, and the
-assets (v0.10.1 and later):
+Every artifact (archives, `.deb`/`.rpm`/`.apk`, SBOMs, `checksums.txt`) has a
+keyless cosign bundle named `<file>.sigstore.json` next to it (signed from
+v0.12.0; v0.10.1 to v0.11.x signed only `checksums.txt`). Verify a single file:
+
+```sh
+cosign verify-blob lambe_X.Y.Z_linux_amd64.deb \
+  --bundle lambe_X.Y.Z_linux_amd64.deb.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/andrew-bierman/lambe/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify lambe_X.Y.Z_linux_amd64.deb --repo andrew-bierman/lambe
+```
+
+or verify `checksums.txt` once and check the rest against it:
 
 ```sh
 cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
   --certificate-identity-regexp '^https://github.com/andrew-bierman/lambe/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 shasum -a 256 -c checksums.txt --ignore-missing
-gh attestation verify lambe_X.Y.Z_linux_amd64.tar.gz --repo andrew-bierman/lambe
 ```
 
-Each archive has an SBOM (`*.sbom.json`) alongside it.
+Each archive has an SBOM (`*.sbom.json`) alongside it. The `release.yml` manual
+dry run skips signing (`--skip=sign`) and publishes nothing; `signs:` uses
+`artifacts: all`, so new artifact types are signed automatically.
 
 ## Reproducible builds
 
